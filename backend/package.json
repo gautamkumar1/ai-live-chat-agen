@@ -11,7 +11,9 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
+    "render:build": "npm run db:generate && npm run build && npm run db:migrate:deploy",
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
     "test": "jest --testPathPatterns='tests/' --forceExit"
