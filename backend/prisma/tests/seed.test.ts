@@ -1,9 +1,21 @@
 import 'dotenv/config'
+import { execSync } from 'child_process'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
+import path from 'path'
+
+const BACKEND_DIR = path.resolve(__dirname, '../..')
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
+
+function runSeed() {
+  execSync('npx tsx prisma/seed.ts', { cwd: BACKEND_DIR, stdio: 'inherit' })
+}
+
+beforeAll(() => {
+  runSeed()
+})
 
 afterAll(async () => {
   try {
@@ -46,20 +58,9 @@ describe('Knowledge base seed', () => {
     }
   })
 
-  it('seed is idempotent: running deleteMany+createMany twice keeps count at 8', async () => {
-    // Simulate what seed.ts does
-    await prisma.knowledgeEntry.deleteMany()
-    // After delete, count should be 0
-    const emptyCount = await prisma.knowledgeEntry.count()
-    expect(emptyCount).toBe(0)
-    // Re-run the seed
-    await import('child_process').then(({ execSync }) =>
-      execSync('npx tsx prisma/seed.ts', {
-        cwd: '/Users/mac/Desktop/coding/ai-live-chat-agent/backend',
-        stdio: 'inherit',
-      })
-    )
-    const finalCount = await prisma.knowledgeEntry.count()
-    expect(finalCount).toBe(8)
+  it('is idempotent: re-seeding keeps count at 8', async () => {
+    runSeed()
+    const count = await prisma.knowledgeEntry.count()
+    expect(count).toBe(8)
   })
 })
