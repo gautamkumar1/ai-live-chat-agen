@@ -37,23 +37,30 @@ chatRouter.post(
   '/stream',
   chatRateLimiter,
   validate(sendMessageSchema),
-  async (req, res, next) => {
+  async (req, res) => {
     const { message, sessionId } = req.body as z.infer<typeof sendMessageSchema>
 
-    res.setHeader('Content-Type', 'text/event-stream')
-    res.setHeader('Cache-Control', 'no-cache')
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
+    res.setHeader('Cache-Control', 'no-cache, no-transform')
     res.setHeader('Connection', 'keep-alive')
+    res.setHeader('X-Accel-Buffering', 'no')
     res.flushHeaders()
+
+    // Disable Nagle algorithm so each write flushes immediately
+    const socket = req.socket
+    socket.setNoDelay(true)
+
+    function send(payload: object) {
+      res.write(`data: ${JSON.stringify(payload)}\n\n`)
+    }
 
     try {
       const result = await generateReplyStream(sessionId, message, (token) => {
-        res.write(`data: ${JSON.stringify({ token })}\n\n`)
+        send({ token })
       })
-      res.write(`data: ${JSON.stringify({ done: true, sessionId: result.sessionId })}\n\n`)
+      send({ done: true, sessionId: result.sessionId })
     } catch (err) {
-      if (err instanceof Error) {
-        res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`)
-      }
+      send({ error: err instanceof Error ? err.message : 'Stream failed.' })
     } finally {
       res.end()
     }
