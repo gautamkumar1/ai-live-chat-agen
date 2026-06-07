@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { MessageBubble } from './MessageBubble'
 import { TypingIndicator } from './TypingIndicator'
 import type { Message } from '@/lib/api'
@@ -10,14 +9,19 @@ interface Props {
 }
 
 export function MessageList({ messages, isLoading }: Props) {
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
   }, [messages, isLoading])
 
   return (
-    <ScrollArea className="flex-1 px-4 py-3">
+    <div
+      ref={scrollRef}
+      className="flex-1 overflow-y-auto px-4 py-3 min-h-0"
+    >
       {messages.length === 0 && !isLoading && (
         <p className="text-center text-sm text-muted-foreground mt-8">
           Ask anything about shipping, returns, or your order.
@@ -27,7 +31,6 @@ export function MessageList({ messages, isLoading }: Props) {
         <MessageBubble key={msg.id} message={msg} />
       ))}
       {isLoading && <TypingIndicator />}
-      <div ref={bottomRef} />
-    </ScrollArea>
+    </div>
   )
 }

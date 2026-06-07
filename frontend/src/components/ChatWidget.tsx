@@ -17,7 +17,7 @@ export function ChatWidget() {
           <span className="font-semibold text-sm">Support Agent</span>
           <Badge variant="secondary" className="text-xs">Online</Badge>
         </div>
-        <Button variant="ghost" size="icon" onClick={reset} title="New conversation">
+        <Button variant="ghost" size="icon" onClick={reset} title="New conversation" aria-label="New conversation">
           <RotateCcw className="w-4 h-4" />
         </Button>
       </div>
