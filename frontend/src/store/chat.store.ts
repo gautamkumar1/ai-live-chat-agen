@@ -11,6 +11,7 @@ interface ChatState {
   addMessage: (msg: Message) => void
   setMessages: (msgs: Message[]) => void
   removeMessage: (id: string) => void
+  appendToMessage: (id: string, token: string) => void
   setLoading: (v: boolean) => void
   setError: (e: string | null) => void
   reset: () => void
@@ -27,6 +28,10 @@ export const useChatStore = create<ChatState>()(
       addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
       setMessages: (msgs) => set({ messages: msgs }),
       removeMessage: (id) => set((s) => ({ messages: s.messages.filter((m) => m.id !== id) })),
+      appendToMessage: (id, token) =>
+        set((s) => ({
+          messages: s.messages.map((m) => (m.id === id ? { ...m, text: m.text + token } : m)),
+        })),
       setLoading: (v) => set({ isLoading: v }),
       setError: (e) => set({ error: e }),
       reset: () => set({ sessionId: undefined, messages: [], error: null, isLoading: false }),

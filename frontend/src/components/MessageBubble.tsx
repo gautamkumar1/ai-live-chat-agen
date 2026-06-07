@@ -4,9 +4,10 @@ import { AiAvatar } from './AiAvatar'
 
 interface Props {
   message: Message
+  isStreaming?: boolean
 }
 
-export function MessageBubble({ message }: Props) {
+export function MessageBubble({ message, isStreaming }: Props) {
   const isUser = message.sender === 'user'
 
   return (
@@ -21,6 +22,9 @@ export function MessageBubble({ message }: Props) {
         )}
       >
         {message.text}
+        {isStreaming && (
+          <span className="inline-block w-0.5 h-3.5 ml-0.5 bg-current align-middle animate-pulse" />
+        )}
       </div>
     </div>
   )

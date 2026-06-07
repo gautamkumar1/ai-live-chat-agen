@@ -106,10 +106,13 @@ On page reload, `useChat` reads `sessionId` from localStorage and calls `GET /ch
 | Method | Path | Body / Params | Response |
 |---|---|---|---|
 | `POST` | `/chat/message` | `{ message, sessionId? }` | `{ reply, sessionId }` |
+| `POST` | `/chat/stream` | `{ message, sessionId? }` | SSE stream of `{ token }` chunks, final `{ done, sessionId }` |
 | `GET` | `/chat/:sessionId` | — | `{ id, createdAt, messages[] }` |
 | `GET` | `/health` | — | `{ status: "ok" }` |
 
-All error responses follow `{ error: string }`. The backend never forwards raw OpenAI error text to the client.
+`/chat/stream` sends `text/event-stream`. Each event is a JSON object: `{ token: string }` during generation, then `{ done: true, sessionId: string }` when complete. On error: `{ error: string }`.
+
+All non-SSE error responses follow `{ error: string }`. The backend never forwards raw OpenAI error text to the client.
 
 ---
 
@@ -139,8 +142,6 @@ All error responses follow `{ error: string }`. The backend never forwards raw O
 ---
 
 ## Trade-offs
-
-**No streaming.** Responses appear all at once. Adding `openai.chat.completions.stream()` with SSE would improve perceived latency for longer answers.
 
 **No auth.** Sessions are a CUID stored in localStorage. Sufficient for a demo; production would need real authentication.
 

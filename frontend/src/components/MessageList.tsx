@@ -17,6 +17,11 @@ export function MessageList({ messages, isLoading }: Props) {
     }
   }, [messages, isLoading])
 
+  // While streaming, the last message is the AI bubble being filled in.
+  // Show TypingIndicator only until the first token arrives (text is still empty).
+  const lastMsg = messages[messages.length - 1]
+  const awaitingFirstToken = isLoading && lastMsg?.sender === 'ai' && lastMsg.text === ''
+
   return (
     <div
       ref={scrollRef}
@@ -28,9 +33,12 @@ export function MessageList({ messages, isLoading }: Props) {
         </p>
       )}
       {messages.map((msg) => (
-        <MessageBubble key={msg.id} message={msg} />
+        // Skip the empty streaming placeholder — TypingIndicator shows instead
+        (!awaitingFirstToken || msg.id !== lastMsg?.id) && (
+          <MessageBubble key={msg.id} message={msg} isStreaming={isLoading && msg.id === lastMsg?.id} />
+        )
       ))}
-      {isLoading && <TypingIndicator />}
+      {awaitingFirstToken && <TypingIndicator />}
     </div>
   )
 }

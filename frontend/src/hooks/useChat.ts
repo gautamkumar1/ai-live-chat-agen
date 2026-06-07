@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useChatStore } from '../store/chat.store'
-import { sendMessage, fetchConversation } from '../lib/api'
+import { sendMessageStream, fetchConversation } from '../lib/api'
 
 export function useChat() {
   const store = useChatStore()
@@ -22,29 +22,33 @@ export function useChat() {
     const trimmed = text.trim()
     if (!trimmed || store.isLoading) return
 
-    const optimistic = {
-      id: `temp-${Date.now()}`,
-      sender: 'user' as const,
+    const userMsgId = `user-${Date.now()}`
+    const aiMsgId = `ai-${Date.now()}`
+
+    store.addMessage({
+      id: userMsgId,
+      sender: 'user',
       text: trimmed,
       createdAt: new Date().toISOString(),
-    }
-
-    store.addMessage(optimistic)
+    })
+    // Add empty AI bubble immediately — tokens stream into it
+    store.addMessage({
+      id: aiMsgId,
+      sender: 'ai',
+      text: '',
+      createdAt: new Date().toISOString(),
+    })
     store.setLoading(true)
     store.setError(null)
 
     try {
-      const result = await sendMessage(trimmed, store.sessionId)
-      if (!store.sessionId) store.setSessionId(result.sessionId)
-
-      store.addMessage({
-        id: `ai-${Date.now()}`,
-        sender: 'ai',
-        text: result.reply,
-        createdAt: new Date().toISOString(),
+      const result = await sendMessageStream(trimmed, store.sessionId, (token) => {
+        useChatStore.getState().appendToMessage(aiMsgId, token)
       })
+      if (!store.sessionId) store.setSessionId(result.sessionId)
     } catch (err) {
-      store.removeMessage(optimistic.id)
+      store.removeMessage(userMsgId)
+      store.removeMessage(aiMsgId)
       store.setError(err instanceof Error ? err.message : 'Something went wrong.')
     } finally {
       store.setLoading(false)
