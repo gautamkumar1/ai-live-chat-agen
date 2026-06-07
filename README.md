@@ -8,7 +8,7 @@
 A customer support chat widget backed by GPT-4o-mini. Users talk to the agent in a React UI; the backend stores every message in Neon PostgreSQL and pulls FAQ answers from the database into each prompt.
 
 <p align="center">
-  <img src="docs/images/demo-screenshot.png" alt="Chat widget answering a return policy question" width="720" />
+  <img src="./docs/images/demo-screenshot.png" alt="Chat widget answering a return policy question" width="720" />
 </p>
 
 Watch a full walkthrough: [demo video on Google Drive](https://drive.google.com/file/d/1RRdeg7LDpawfBY_yzCNoTY2YQZ9H6lnM/view?usp=sharing)
