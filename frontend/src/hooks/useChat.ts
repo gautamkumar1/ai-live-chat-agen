@@ -1,19 +1,21 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { useChatStore } from '../store/chat.store'
 import { sendMessage, fetchConversation } from '../lib/api'
 
 export function useChat() {
   const store = useChatStore()
-  const initialized = useRef(false)
 
-  // Restore session on mount
+  // Restore session after persist middleware finishes rehydrating from localStorage
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (initialized.current || !store.sessionId) return
-    initialized.current = true
-
-    fetchConversation(store.sessionId)
-      .then((conv) => store.setMessages(conv.messages))
-      .catch(() => store.reset())
+    const unsub = useChatStore.persist.onFinishHydration(() => {
+      const { sessionId } = useChatStore.getState()
+      if (!sessionId) return
+      fetchConversation(sessionId)
+        .then((conv) => useChatStore.getState().setMessages(conv.messages))
+        .catch(() => useChatStore.getState().reset())
+    })
+    return unsub
   }, [])
 
   async function send(text: string) {
@@ -42,6 +44,7 @@ export function useChat() {
         createdAt: new Date().toISOString(),
       })
     } catch (err) {
+      store.removeMessage(optimistic.id)
       store.setError(err instanceof Error ? err.message : 'Something went wrong.')
     } finally {
       store.setLoading(false)
