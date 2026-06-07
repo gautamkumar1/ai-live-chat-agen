@@ -14,7 +14,22 @@ export const logger = pino({
 export function createApp() {
   const app = express()
 
-  app.use(helmet())
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:'],
+          connectSrc: ["'self'"],
+          frameAncestors: ["'none'"],
+        },
+      },
+      hsts: { maxAge: 31536000, includeSubDomains: true },
+      noSniff: true,
+    }),
+  )
   app.use(
     cors({
       origin: env.FRONTEND_URL,
@@ -24,7 +39,8 @@ export function createApp() {
     }),
   )
   app.use(pinoHttp({ logger }))
-  app.use(express.json({ limit: '16kb' }))
+  app.use(express.json({ limit: '8kb' }))
+  app.use(express.urlencoded({ extended: false, limit: '8kb' }))
 
   app.get('/health', (_req, res) => res.json({ status: 'ok' }))
   app.use('/chat', chatRouter)
