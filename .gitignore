@@ -1,6 +1,27 @@
+# deps
 node_modules/
+
+# build outputs
 dist/
+build/
+out/
+coverage/
+
+# env — keep .env.example tracked
 .env
 .env.local
+.env.*.local
+
+# misc
 *.log
 .DS_Store
+
+# editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# monorepo tooling
+.turbo/
+.eslintcache
