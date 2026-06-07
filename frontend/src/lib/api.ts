@@ -71,7 +71,11 @@ export async function sendMessageStream(
         error?: string
       }
       if (payload.error) throw new Error(payload.error)
-      if (payload.token) onToken(payload.token)
+      if (payload.token) {
+        onToken(payload.token)
+        // yield to the microtask queue so React can paint each token
+        await Promise.resolve()
+      }
       if (payload.done && payload.sessionId) resolvedSessionId = payload.sessionId
     }
   }
