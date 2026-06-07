@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { createApp, logger } from './src/app'
 import { env } from './src/config/env'
 import { prisma } from './src/db/client'
