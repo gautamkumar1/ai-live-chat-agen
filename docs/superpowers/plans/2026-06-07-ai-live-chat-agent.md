@@ -403,12 +403,14 @@ Categories: shipping (2), returns (2), support (2), orders (1), payments (1)
 
 ### Task 6: Env config with Zod validation
 
+> **COMPLETED** — committed as `add Zod env config`
+
 **Skills:** `nodejs-backend-patterns`, `owasp-security-check`
 
 **Files:**
-- Create: `backend/src/config/env.ts`
+- Created: `backend/src/config/env.ts`
 
-- [ ] **Step 1: Create backend/src/config/env.ts**
+- [x] **Step 1: Create backend/src/config/env.ts**
 
 ```typescript
 import { z } from 'zod'
@@ -436,7 +438,7 @@ if (!parsed.success) {
 export const env = parsed.data
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add src/config/env.ts
@@ -479,10 +481,12 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 ### Task 8: Knowledge service
 
-**Files:**
-- Create: `backend/src/services/knowledge.service.ts`
+> **COMPLETED** — committed as `add knowledge service`
 
-- [ ] **Step 1: Create backend/src/services/knowledge.service.ts**
+**Files:**
+- Created: `backend/src/services/knowledge.service.ts`
+
+- [x] **Step 1: Create backend/src/services/knowledge.service.ts**
 
 ```typescript
 import { prisma } from '../db/client'
@@ -508,7 +512,7 @@ export async function getKnowledgeContext(): Promise<string> {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add src/services/knowledge.service.ts
@@ -519,13 +523,15 @@ git commit -m "feat(service): knowledge service fetches FAQ from DB"
 
 ### Task 9: Chat service with OpenAI Agents SDK
 
+> **COMPLETED** — committed as `add types and chat service`
+
 **Skills:** `openai-agents-sdk`, `owasp-security-check`
 
 **Files:**
-- Create: `backend/src/services/chat.service.ts`
-- Create: `backend/src/types/index.ts`
+- Created: `backend/src/services/chat.service.ts`
+- Created: `backend/src/types/index.ts`
 
-- [ ] **Step 1: Create backend/src/types/index.ts**
+- [x] **Step 1: Create backend/src/types/index.ts**
 
 ```typescript
 export interface ChatMessage {
@@ -549,7 +555,7 @@ export class AppError extends Error {
 }
 ```
 
-- [ ] **Step 2: Create backend/src/services/chat.service.ts**
+- [x] **Step 2: Create backend/src/services/chat.service.ts**
 
 ```typescript
 import OpenAI from 'openai'
@@ -660,7 +666,7 @@ export async function getConversationHistory(sessionId: string) {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/services/chat.service.ts src/types/index.ts
@@ -671,14 +677,17 @@ git commit -m "feat(service): chat service with OpenAI, conversation persistence
 
 ### Task 10: Middleware — validation, rate limiter, error handler
 
+> **COMPLETED** — committed as `add middleware: validate, rate-limiter, error-handler`
+> Note: validate.ts uses `ZodTypeAny` + `.issues` (Zod v4 API); error-handler uses standalone pino logger to avoid circular import with app.ts.
+
 **Skills:** `nodejs-backend-patterns`, `owasp-security-check`, `typescript-security-review`
 
 **Files:**
-- Create: `backend/src/middleware/validate.ts`
-- Create: `backend/src/middleware/rate-limiter.ts`
-- Create: `backend/src/middleware/error-handler.ts`
+- Created: `backend/src/middleware/validate.ts`
+- Created: `backend/src/middleware/rate-limiter.ts`
+- Created: `backend/src/middleware/error-handler.ts`
 
-- [ ] **Step 1: Create backend/src/middleware/validate.ts**
+- [x] **Step 1: Create backend/src/middleware/validate.ts**
 
 ```typescript
 import { Request, Response, NextFunction } from 'express'
@@ -698,7 +707,7 @@ export function validate(schema: ZodSchema) {
 }
 ```
 
-- [ ] **Step 2: Create backend/src/middleware/rate-limiter.ts**
+- [x] **Step 2: Create backend/src/middleware/rate-limiter.ts**
 
 ```typescript
 import rateLimit from 'express-rate-limit'
@@ -713,7 +722,7 @@ export const chatRateLimiter = rateLimit({
 })
 ```
 
-- [ ] **Step 3: Create backend/src/middleware/error-handler.ts**
+- [x] **Step 3: Create backend/src/middleware/error-handler.ts**
 
 ```typescript
 import { Request, Response, NextFunction } from 'express'
@@ -735,7 +744,7 @@ export function errorHandler(
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/middleware/
@@ -746,10 +755,12 @@ git commit -m "feat(middleware): Zod validation, rate limiting, global error han
 
 ### Task 11: Chat router
 
-**Files:**
-- Create: `backend/src/routes/chat.router.ts`
+> **COMPLETED** — committed as `add chat router`
 
-- [ ] **Step 1: Create backend/src/routes/chat.router.ts**
+**Files:**
+- Created: `backend/src/routes/chat.router.ts`
+
+- [x] **Step 1: Create backend/src/routes/chat.router.ts**
 
 ```typescript
 import { Router } from 'express'
@@ -796,7 +807,7 @@ chatRouter.get('/:sessionId', async (req, res, next) => {
 })
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add src/routes/chat.router.ts
@@ -807,13 +818,16 @@ git commit -m "feat(routes): POST /chat/message and GET /chat/:sessionId"
 
 ### Task 12: Express app + server entry point
 
+> **COMPLETED** — committed as `feat: add Express app and server entry point`
+> Also fixed: tsconfig `rootDir` changed from `src` to `.` to accommodate `server.ts` at root; Zod v4 `.issues` API fix committed separately.
+
 **Skills:** `nodejs-backend-patterns`, `owasp-security-check`
 
 **Files:**
-- Create: `backend/src/app.ts`
-- Create: `backend/server.ts`
+- Created: `backend/src/app.ts`
+- Created: `backend/server.ts`
 
-- [ ] **Step 1: Create backend/src/app.ts**
+- [x] **Step 1: Create backend/src/app.ts**
 
 ```typescript
 import express from 'express'
@@ -853,7 +867,7 @@ export function createApp() {
 }
 ```
 
-- [ ] **Step 2: Create backend/server.ts**
+- [x] **Step 2: Create backend/server.ts**
 
 ```typescript
 import { createApp, logger } from './src/app'
@@ -886,7 +900,7 @@ main().catch((err) => {
 })
 ```
 
-- [ ] **Step 3: Start backend and verify health endpoint**
+- [x] **Step 3: Start backend and verify health endpoint**
 
 ```bash
 cd backend
@@ -902,7 +916,7 @@ curl http://localhost:3001/health
 
 Expected: `{"status":"ok"}`
 
-- [ ] **Step 4: Test POST /chat/message manually**
+- [x] **Step 4: Test POST /chat/message manually**
 
 ```bash
 curl -X POST http://localhost:3001/chat/message \
@@ -912,7 +926,7 @@ curl -X POST http://localhost:3001/chat/message \
 
 Expected: `{"reply":"...","sessionId":"clxxx..."}`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app.ts server.ts
