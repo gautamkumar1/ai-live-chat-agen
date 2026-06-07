@@ -36,6 +36,9 @@ export function ChatInput({ onSend, disabled }: Props) {
         className="flex-1"
         aria-label="Chat message input"
       />
+      <span className="text-xs text-muted-foreground self-center whitespace-nowrap">
+        {value.length}/2000
+      </span>
       <Button
         onClick={handleSend}
         disabled={disabled || !value.trim()}

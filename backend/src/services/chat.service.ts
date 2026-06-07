@@ -16,6 +16,9 @@ export async function generateReply(
   userMessage: string,
 ): Promise<ChatResult> {
   const truncatedMessage = userMessage.slice(0, env.MAX_MESSAGE_LENGTH)
+  const sanitized = truncatedMessage.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim()
+  if (!sanitized) throw new AppError(400, 'Message contains no readable content.')
+  const finalMessage = sanitized
 
   // Resolve or create conversation
   let conversation = sessionId
@@ -31,7 +34,7 @@ export async function generateReply(
     data: {
       conversationId: conversation.id,
       sender: 'user',
-      text: truncatedMessage,
+      text: finalMessage,
     },
   })
 
