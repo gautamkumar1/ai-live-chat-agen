@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { validate } from '../middleware/validate'
 import { chatRateLimiter } from '../middleware/rate-limiter'
-import { generateReply, getConversationHistory } from '../services/chat.service'
+import { generateReply, generateReplyStream, getConversationHistory } from '../services/chat.service'
 import { env } from '../config/env'
 import { AppError } from '../types'
 
@@ -28,6 +28,34 @@ chatRouter.post(
       res.json(result)
     } catch (err) {
       next(err)
+    }
+  },
+)
+
+// POST /chat/stream — SSE streaming endpoint
+chatRouter.post(
+  '/stream',
+  chatRateLimiter,
+  validate(sendMessageSchema),
+  async (req, res, next) => {
+    const { message, sessionId } = req.body as z.infer<typeof sendMessageSchema>
+
+    res.setHeader('Content-Type', 'text/event-stream')
+    res.setHeader('Cache-Control', 'no-cache')
+    res.setHeader('Connection', 'keep-alive')
+    res.flushHeaders()
+
+    try {
+      const result = await generateReplyStream(sessionId, message, (token) => {
+        res.write(`data: ${JSON.stringify({ token })}\n\n`)
+      })
+      res.write(`data: ${JSON.stringify({ done: true, sessionId: result.sessionId })}\n\n`)
+    } catch (err) {
+      if (err instanceof Error) {
+        res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`)
+      }
+    } finally {
+      res.end()
     }
   },
 )
