@@ -42,10 +42,10 @@ export function useChat() {
     store.setError(null)
 
     try {
-      const result = await sendMessageStream(trimmed, store.sessionId, (token) => {
+      const result = await sendMessageStream(trimmed, useChatStore.getState().sessionId, (token) => {
         useChatStore.getState().appendToMessage(aiMsgId, token)
       })
-      if (!store.sessionId) store.setSessionId(result.sessionId)
+      if (!useChatStore.getState().sessionId) store.setSessionId(result.sessionId)
     } catch (err) {
       store.removeMessage(userMsgId)
       store.removeMessage(aiMsgId)
