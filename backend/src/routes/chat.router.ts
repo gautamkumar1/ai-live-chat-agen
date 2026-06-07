@@ -4,6 +4,7 @@ import { validate } from '../middleware/validate'
 import { chatRateLimiter } from '../middleware/rate-limiter'
 import { generateReply, getConversationHistory } from '../services/chat.service'
 import { env } from '../config/env'
+import { AppError } from '../types'
 
 export const chatRouter = Router()
 
@@ -31,10 +32,13 @@ chatRouter.post(
   },
 )
 
-chatRouter.get('/:sessionId', async (req, res, next) => {
+const sessionIdSchema = z.object({ sessionId: z.string().cuid() })
+
+chatRouter.get('/:sessionId', chatRateLimiter, async (req, res, next) => {
   try {
-    const { sessionId } = req.params
-    const conversation = await getConversationHistory(sessionId)
+    const parsed = sessionIdSchema.safeParse(req.params)
+    if (!parsed.success) return next(new AppError(400, 'Invalid session ID format.'))
+    const conversation = await getConversationHistory(parsed.data.sessionId)
     res.json(conversation)
   } catch (err) {
     next(err)
