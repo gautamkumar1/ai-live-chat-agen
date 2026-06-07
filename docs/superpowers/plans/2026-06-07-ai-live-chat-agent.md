@@ -1493,7 +1493,7 @@ git commit -m "feat: sanitize control chars, add char counter in UI"
 **Files:**
 - Modify: `README.md`
 
-- [ ] **Step 1: Replace README.md with full content**
+- [x] **Step 1: Replace README.md with full content**
 
 ```markdown
 # AI Live Chat Agent
@@ -1603,13 +1603,13 @@ The LLM layer is fully behind `ChatService`. Swapping to a different model or pr
 - **No test suite:** Given the timebox, manual testing was prioritised. Jest + Supertest integration tests would be the next addition.
 ```
 
-- [ ] **Step 2: Run stop-slop check on README prose** — re-read every paragraph and remove filler phrases, passive constructions, and em dashes. The README above is already written to pass this check.
+- [x] **Step 2: Run stop-slop check on README prose** — re-read every paragraph and remove filler phrases, passive constructions, and em dashes. The README above is already written to pass this check.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add README.md
-git commit -m "docs: complete README with setup, architecture, LLM notes, trade-offs"
+git commit -m "docs: write full README"
 ```
 
 ---
