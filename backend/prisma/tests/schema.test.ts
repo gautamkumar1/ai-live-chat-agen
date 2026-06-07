@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
 
@@ -9,7 +10,11 @@ function createPrismaClient() {
 const prisma = createPrismaClient()
 
 afterAll(async () => {
-  await prisma.$disconnect()
+  try {
+    await prisma.$disconnect()
+  } catch {
+    // ignore disconnect errors during teardown
+  }
 })
 
 describe('Database schema', () => {
