@@ -17,27 +17,30 @@ export function MessageList({ messages, isLoading }: Props) {
     }
   }, [messages, isLoading])
 
-  // While streaming, the last message is the AI bubble being filled in.
-  // Show TypingIndicator only until the first token arrives (text is still empty).
   const lastMsg = messages[messages.length - 1]
   const awaitingFirstToken = isLoading && lastMsg?.sender === 'ai' && lastMsg.text === ''
 
   return (
-    <div
-      ref={scrollRef}
-      className="flex-1 overflow-y-auto px-4 py-3 min-h-0"
-    >
+    <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 px-5 py-5">
       {messages.length === 0 && !isLoading && (
-        <p className="text-center text-sm text-muted-foreground mt-8">
-          Ask anything about shipping, returns, or your order.
-        </p>
+        <div className="h-full flex flex-col items-center justify-center gap-2 select-none">
+          <span style={{ color: 'var(--text-muted)', fontSize: 11, letterSpacing: '0.12em' }}>
+            SUPPORT_AGENT v1.0
+          </span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
+            ask about shipping, returns, or your order
+          </span>
+        </div>
       )}
-      {messages.map((msg) => (
-        // Skip the empty streaming placeholder — TypingIndicator shows instead
-        (!awaitingFirstToken || msg.id !== lastMsg?.id) && (
-          <MessageBubble key={msg.id} message={msg} isStreaming={isLoading && msg.id === lastMsg?.id} />
-        )
-      ))}
+      {messages.map((msg) =>
+        (!awaitingFirstToken || msg.id !== lastMsg?.id) ? (
+          <MessageBubble
+            key={msg.id}
+            message={msg}
+            isStreaming={isLoading && msg.id === lastMsg?.id}
+          />
+        ) : null
+      )}
       {awaitingFirstToken && <TypingIndicator />}
     </div>
   )

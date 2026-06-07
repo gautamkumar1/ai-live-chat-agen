@@ -2,14 +2,24 @@ import { AiAvatar } from './AiAvatar'
 
 export function TypingIndicator() {
   return (
-    <div className="flex gap-2 mb-3 justify-start">
+    <div className="flex gap-3 mb-5">
       <AiAvatar />
-      <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1 items-center">
+      <div
+        className="flex items-center gap-[3px] pt-1"
+        style={{ borderLeft: '1px solid var(--accent)', paddingLeft: 12 }}
+      >
         {[0, 1, 2].map((i) => (
           <span
             key={i}
-            className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-bounce"
-            style={{ animationDelay: `${i * 150}ms` }}
+            className="inline-block"
+            style={{
+              width: 2,
+              height: 12,
+              background: 'var(--accent)',
+              animation: 'bar-pulse 1.1s ease-in-out infinite',
+              animationDelay: `${i * 160}ms`,
+              transformOrigin: 'bottom',
+            }}
           />
         ))}
       </div>

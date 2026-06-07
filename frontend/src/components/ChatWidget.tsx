@@ -1,25 +1,72 @@
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
 import { useChat } from '@/hooks/useChat'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { RotateCcw } from 'lucide-react'
 
 export function ChatWidget() {
   const { messages, isLoading, error, send, reset } = useChat()
 
   return (
-    <div className="flex flex-col h-full w-full max-w-2xl mx-auto border border-border rounded-2xl shadow-lg overflow-hidden bg-background">
+    <div
+      className="flex flex-col h-full w-full"
+      style={{
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border)',
+      }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-primary/5">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-500" />
-          <span className="font-semibold text-sm">Support Agent</span>
-          <Badge variant="secondary" className="text-xs">Online</Badge>
+      <div
+        className="flex items-center justify-between px-5 py-3 shrink-0"
+        style={{ borderBottom: '1px solid var(--border)' }}
+      >
+        <div className="flex items-center gap-3">
+          {/* status dot */}
+          <span
+            className="inline-block"
+            style={{
+              width: 6,
+              height: 6,
+              background: 'var(--accent)',
+              boxShadow: '0 0 6px var(--accent)',
+              borderRadius: '50%',
+            }}
+          />
+          <span
+            className="font-medium tracking-widest uppercase"
+            style={{ fontSize: 10, color: 'var(--text-soft)', letterSpacing: '0.18em' }}
+          >
+            Support&nbsp;Agent
+          </span>
+          <span
+            style={{
+              fontSize: 10,
+              color: 'var(--accent)',
+              letterSpacing: '0.1em',
+              opacity: 0.8,
+            }}
+          >
+            [online]
+          </span>
         </div>
-        <Button variant="ghost" size="icon" onClick={reset} title="New conversation" aria-label="New conversation">
-          <RotateCcw className="w-4 h-4" />
-        </Button>
+
+        <button
+          onClick={reset}
+          title="New conversation"
+          aria-label="New conversation"
+          className="flex items-center justify-center transition-colors"
+          style={{
+            width: 24,
+            height: 24,
+            color: 'var(--text-muted)',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+        >
+          <RotateCcw size={12} strokeWidth={2} />
+        </button>
       </div>
 
       {/* Messages */}
@@ -27,7 +74,16 @@ export function ChatWidget() {
 
       {/* Error */}
       {error && (
-        <p className="text-xs text-destructive text-center px-4 pb-1">{error}</p>
+        <div
+          className="px-5 py-2 text-[11px] shrink-0"
+          style={{
+            color: 'var(--error)',
+            borderTop: '1px solid rgba(255,68,68,0.2)',
+            background: 'rgba(255,68,68,0.04)',
+          }}
+        >
+          {`// error: ${error}`}
+        </div>
       )}
 
       {/* Input */}
