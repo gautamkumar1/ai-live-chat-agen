@@ -32,7 +32,7 @@ export function createApp() {
   )
   app.use(
     cors({
-      origin: env.FRONTEND_URL,
+      origin: env.FRONTEND_URL.replace(/\/$/, ''),
       methods: ['GET', 'POST'],
       allowedHeaders: ['Content-Type', 'Accept'],
       credentials: false,
