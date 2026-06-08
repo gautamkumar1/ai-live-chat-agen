@@ -3,11 +3,24 @@ import { createApp, logger } from './src/app'
 import { env } from './src/config/env'
 import { prisma } from './src/db/client'
 
+function startSelfPing() {
+  if (env.NODE_ENV !== 'production') return
+  const url = 'https://backend-support-agent.onrender.com/health'
+  setInterval(async () => {
+    try {
+      await fetch(url)
+    } catch {
+      // ignore — server may be restarting
+    }
+  }, 14 * 60 * 1000) // every 14 minutes
+}
+
 async function main() {
   const app = createApp()
 
   const server = app.listen(env.PORT, () => {
     logger.info({ port: env.PORT }, 'Server started')
+    startSelfPing()
   })
 
   async function shutdown() {
