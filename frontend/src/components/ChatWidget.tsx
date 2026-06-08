@@ -21,13 +21,15 @@ function friendlyError(raw: string): string {
 
 export function ChatWidget() {
   const { messages, isLoading, error, send, reset } = useChat()
-  const [isOnline, setIsOnline] = useState(true)
+  const [isOnline, setIsOnline] = useState<boolean | null>(null)
 
   useEffect(() => {
     let cancelled = false
     async function check() {
       try {
-        const res = await fetch(`${BASE}/health`)
+        const res = await fetch(`${BASE}/health`, {
+          signal: AbortSignal.timeout(5000),
+        })
         if (!cancelled) setIsOnline(res.ok)
       } catch {
         if (!cancelled) setIsOnline(false)
@@ -72,16 +74,18 @@ export function ChatWidget() {
           >
             Support&nbsp;Agent
           </span>
-          <span
-            style={{
-              fontSize: 10,
-              color: isOnline ? 'var(--accent)' : 'var(--error)',
-              letterSpacing: '0.1em',
-              opacity: 0.8,
-            }}
-          >
-            {isOnline ? '[online]' : '[offline]'}
-          </span>
+          {isOnline !== null && (
+            <span
+              style={{
+                fontSize: 10,
+                color: isOnline ? 'var(--accent)' : 'var(--error)',
+                letterSpacing: '0.1em',
+                opacity: 0.8,
+              }}
+            >
+              {isOnline ? '[online]' : '[offline]'}
+            </span>
+          )}
         </div>
 
         <button
