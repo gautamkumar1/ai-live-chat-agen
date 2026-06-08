@@ -1,10 +1,45 @@
+import { useState, useEffect } from 'react'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
 import { useChat } from '@/hooks/useChat'
 import { RotateCcw } from 'lucide-react'
 
+const BASE = import.meta.env.VITE_API_URL ?? ''
+
+function friendlyError(raw: string): string {
+  if (raw.toLowerCase().includes('busy') || raw.toLowerCase().includes('rate limit')) {
+    return 'AI service is busy. Please wait a moment and try again.'
+  }
+  if (raw.toLowerCase().includes('timed out') || raw.toLowerCase().includes('timeout')) {
+    return 'Request timed out. Please check your connection and try again.'
+  }
+  if (raw.toLowerCase().includes('streaming not supported')) {
+    return 'Your browser does not support streaming. Please try a different browser.'
+  }
+  return 'Something went wrong. Please try again.'
+}
+
 export function ChatWidget() {
   const { messages, isLoading, error, send, reset } = useChat()
+  const [isOnline, setIsOnline] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    async function check() {
+      try {
+        const res = await fetch(`${BASE}/health`)
+        if (!cancelled) setIsOnline(res.ok)
+      } catch {
+        if (!cancelled) setIsOnline(false)
+      }
+    }
+    check()
+    const id = setInterval(check, 30_000)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [])
 
   return (
     <div
@@ -40,12 +75,12 @@ export function ChatWidget() {
           <span
             style={{
               fontSize: 10,
-              color: 'var(--accent)',
+              color: isOnline ? 'var(--accent)' : 'var(--error)',
               letterSpacing: '0.1em',
               opacity: 0.8,
             }}
           >
-            [online]
+            {isOnline ? '[online]' : '[offline]'}
           </span>
         </div>
 
@@ -70,7 +105,7 @@ export function ChatWidget() {
       </div>
 
       {/* Messages */}
-      <MessageList messages={messages} isLoading={isLoading} />
+      <MessageList messages={messages} isLoading={isLoading} onSend={send} />
 
       {/* Error */}
       {error && (
@@ -82,7 +117,7 @@ export function ChatWidget() {
             background: 'rgba(255,68,68,0.04)',
           }}
         >
-          {`// error: ${error}`}
+          {`// ${friendlyError(error)}`}
         </div>
       )}
 

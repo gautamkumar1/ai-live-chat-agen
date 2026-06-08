@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { AppError } from '../types'
-import pino from 'pino'
-
-const logger = pino()
+import { logger } from '../app'
 
 export function errorHandler(
   err: Error,

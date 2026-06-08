@@ -1,4 +1,4 @@
-import { useState, useRef, type KeyboardEvent } from 'react'
+import { useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import { Send } from 'lucide-react'
 
 interface Props {
@@ -7,8 +7,17 @@ interface Props {
 }
 
 export function ChatInput({ onSend, disabled }: Props) {
+  const MAX_LENGTH = Number(import.meta.env.VITE_MAX_MESSAGE_LENGTH ?? 2000)
   const [value, setValue] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-grow textarea up to ~5 lines, then scroll
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`
+  }, [value])
 
   function handleSend() {
     if (!value.trim() || disabled) return
@@ -16,15 +25,15 @@ export function ChatInput({ onSend, disabled }: Props) {
     setValue('')
   }
 
-  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
     }
   }
 
-  const nearLimit = value.length > 1800
-  const atLimit = value.length >= 2000
+  const nearLimit = value.length > Math.round(MAX_LENGTH * 0.9)
+  const atLimit = value.length >= MAX_LENGTH
 
   return (
     <div
@@ -42,15 +51,16 @@ export function ChatInput({ onSend, disabled }: Props) {
           &gt;
         </span>
 
-        <input
-          ref={inputRef}
+        <textarea
+          ref={textareaRef}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="type a message…"
           disabled={disabled}
-          maxLength={2000}
+          maxLength={MAX_LENGTH}
           aria-label="Chat message input"
+          rows={1}
           className="flex-1 bg-transparent outline-none border-none"
           style={{
             color: 'var(--text)',
@@ -58,6 +68,8 @@ export function ChatInput({ onSend, disabled }: Props) {
             fontSize: 13,
             lineHeight: 1.6,
             caretColor: 'var(--accent)',
+            resize: 'none',
+            overflow: 'auto',
           }}
         />
 
@@ -67,7 +79,7 @@ export function ChatInput({ onSend, disabled }: Props) {
             className="shrink-0 text-[11px] tabular-nums transition-colors"
             style={{ color: atLimit ? 'var(--error)' : nearLimit ? '#ff9933' : 'var(--text-muted)' }}
           >
-            {value.length}/2000
+            {value.length}/{MAX_LENGTH}
           </span>
         )}
 

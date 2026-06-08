@@ -1,11 +1,20 @@
 import { prisma } from '../db/client'
 
+let cachedContext: string | null = null
+let cacheExpiresAt = 0
+
 export async function getKnowledgeContext(): Promise<string> {
+  if (cachedContext !== null && Date.now() < cacheExpiresAt) return cachedContext
+
   const entries = await prisma.knowledgeEntry.findMany({
     orderBy: { category: 'asc' },
   })
 
-  if (entries.length === 0) return ''
+  if (entries.length === 0) {
+    cachedContext = ''
+    cacheExpiresAt = Date.now() + 5 * 60 * 1000
+    return ''
+  }
 
   const grouped = entries.reduce<Record<string, string[]>>((acc, e) => {
     acc[e.category] = acc[e.category] ?? []
@@ -17,5 +26,7 @@ export async function getKnowledgeContext(): Promise<string> {
     .map(([cat, items]) => `## ${cat.toUpperCase()}\n${items.join('\n\n')}`)
     .join('\n\n')
 
-  return `STORE KNOWLEDGE BASE:\n\n${sections}`
+  cachedContext = `STORE KNOWLEDGE BASE:\n\n${sections}`
+  cacheExpiresAt = Date.now() + 5 * 60 * 1000
+  return cachedContext
 }

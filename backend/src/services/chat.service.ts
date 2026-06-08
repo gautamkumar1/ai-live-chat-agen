@@ -1,170 +1,116 @@
-import OpenAI from 'openai'
 import { env } from '../config/env'
 import { prisma } from '../db/client'
 import { getKnowledgeContext } from './knowledge.service'
+import { llmProvider, type LLMMessage } from './llm-provider'
 import { AppError, type ChatResult } from '../types'
-
-const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY })
 
 const BASE_SYSTEM_PROMPT = `You are a helpful customer support agent for a small e-commerce store.
 Answer questions clearly and concisely. Be friendly but professional.
 If you don't know the answer, say so honestly and suggest the customer contact support@ourstore.com.
 Never make up information about orders, policies, or pricing not provided to you.`
 
-export async function generateReply(
-  sessionId: string | undefined,
-  userMessage: string,
-): Promise<ChatResult> {
-  const truncatedMessage = userMessage.slice(0, env.MAX_MESSAGE_LENGTH)
-  const sanitized = truncatedMessage.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim()
+async function resolveContext(sessionId: string | undefined, userMessage: string) {
+  const truncated = userMessage.slice(0, env.MAX_MESSAGE_LENGTH)
+  const sanitized = truncated.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim()
   if (!sanitized) throw new AppError(400, 'Message contains no readable content.')
-  const finalMessage = sanitized
 
   // Resolve or create conversation
   let conversation = sessionId
     ? await prisma.conversation.findUnique({ where: { id: sessionId } })
     : null
+  if (!conversation) conversation = await prisma.conversation.create({ data: {} })
 
-  if (!conversation) {
-    conversation = await prisma.conversation.create({ data: {} })
-  }
-
-  // Persist user message
-  await prisma.message.create({
-    data: {
-      conversationId: conversation.id,
-      sender: 'user',
-      text: finalMessage,
-    },
-  })
-
-  // Fetch recent history (excluding the message we just saved)
+  // Fetch history BEFORE saving the user message so the current turn is not duplicated
   const history = await prisma.message.findMany({
     where: { conversationId: conversation.id },
-    orderBy: { createdAt: 'asc' },
+    orderBy: { createdAt: 'desc' },
     take: env.MAX_HISTORY_MESSAGES,
   })
+  history.reverse()
 
   const knowledgeContext = await getKnowledgeContext()
   const systemPrompt = knowledgeContext
     ? `${BASE_SYSTEM_PROMPT}\n\n${knowledgeContext}`
     : BASE_SYSTEM_PROMPT
 
-  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+  const messages: LLMMessage[] = [
     { role: 'system', content: systemPrompt },
     ...history.map((m) => ({
       role: m.sender === 'user' ? ('user' as const) : ('assistant' as const),
       content: m.text,
     })),
+    { role: 'user', content: sanitized },
   ]
+
+  return { conversation, sanitized, messages }
+}
+
+function mapLlmError(err: unknown): never {
+  if (err instanceof Error && err.name === 'AbortError') throw err
+  const msg = err instanceof Error ? err.message : String(err)
+  if (msg.includes('401') || msg.includes('Unauthorized'))
+    throw new AppError(502, 'AI service authentication failed. Please contact support.')
+  if (msg.includes('429') || msg.includes('rate limit'))
+    throw new AppError(429, 'AI service is busy. Please try again in a moment.')
+  if (msg.includes('timeout') || msg.includes('ECONNRESET'))
+    throw new AppError(504, 'AI service timed out. Please try again.')
+  throw new AppError(502, 'AI service unavailable. Please try again later.')
+}
+
+export async function generateReply(
+  sessionId: string | undefined,
+  userMessage: string,
+): Promise<ChatResult> {
+  const { conversation, sanitized, messages } = await resolveContext(sessionId, userMessage)
 
   let reply: string
   try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages,
-      max_tokens: 512,
-      temperature: 0.4,
-    })
-    reply = completion.choices[0]?.message?.content?.trim() ?? 'Sorry, I could not generate a response. Please try again.'
+    reply = await llmProvider.complete(messages)
+    if (!reply) reply = 'Sorry, I could not generate a response. Please try again.'
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err)
-    if (message.includes('401') || message.includes('Unauthorized')) {
-      throw new AppError(502, 'AI service authentication failed. Please contact support.')
-    }
-    if (message.includes('429') || message.includes('rate limit')) {
-      throw new AppError(429, 'AI service is busy. Please try again in a moment.')
-    }
-    if (message.includes('timeout') || message.includes('ECONNRESET')) {
-      throw new AppError(504, 'AI service timed out. Please try again.')
-    }
-    throw new AppError(502, 'AI service unavailable. Please try again later.')
+    mapLlmError(err)
   }
 
-  // Persist AI reply
-  await prisma.message.create({
-    data: {
-      conversationId: conversation.id,
-      sender: 'ai',
-      text: reply,
-    },
-  })
+  await prisma.$transaction([
+    prisma.message.create({
+      data: { conversationId: conversation.id, sender: 'user', text: sanitized },
+    }),
+    prisma.message.create({
+      data: { conversationId: conversation.id, sender: 'ai', text: reply! },
+    }),
+  ])
 
-  return { reply, sessionId: conversation.id }
+  return { reply: reply!, sessionId: conversation.id }
 }
 
 export async function generateReplyStream(
   sessionId: string | undefined,
   userMessage: string,
   onToken: (token: string) => void,
+  signal?: AbortSignal,
 ): Promise<{ sessionId: string }> {
-  const truncatedMessage = userMessage.slice(0, env.MAX_MESSAGE_LENGTH)
-  const sanitized = truncatedMessage.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim()
-  if (!sanitized) throw new AppError(400, 'Message contains no readable content.')
-
-  let conversation = sessionId
-    ? await prisma.conversation.findUnique({ where: { id: sessionId } })
-    : null
-  if (!conversation) conversation = await prisma.conversation.create({ data: {} })
-
-  await prisma.message.create({
-    data: { conversationId: conversation.id, sender: 'user', text: sanitized },
-  })
-
-  const history = await prisma.message.findMany({
-    where: { conversationId: conversation.id },
-    orderBy: { createdAt: 'asc' },
-    take: env.MAX_HISTORY_MESSAGES,
-  })
-
-  const knowledgeContext = await getKnowledgeContext()
-  const systemPrompt = knowledgeContext
-    ? `${BASE_SYSTEM_PROMPT}\n\n${knowledgeContext}`
-    : BASE_SYSTEM_PROMPT
-
-  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: 'system', content: systemPrompt },
-    ...history.map((m) => ({
-      role: m.sender === 'user' ? ('user' as const) : ('assistant' as const),
-      content: m.text,
-    })),
-  ]
+  const { conversation, sanitized, messages } = await resolveContext(sessionId, userMessage)
 
   let fullReply = ''
   try {
-    const stream = openai.chat.completions.stream({
-      model: 'gpt-4o-mini',
-      messages,
-      max_tokens: 512,
-      temperature: 0.4,
-    })
-
-    for await (const chunk of stream) {
-      const token = chunk.choices[0]?.delta?.content ?? ''
-      if (token) {
-        fullReply += token
-        onToken(token)
-      }
-    }
+    await llmProvider.stream(messages, (token) => {
+      fullReply += token
+      onToken(token)
+    }, signal)
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err)
-    if (message.includes('401') || message.includes('Unauthorized')) {
-      throw new AppError(502, 'AI service authentication failed. Please contact support.')
-    }
-    if (message.includes('429') || message.includes('rate limit')) {
-      throw new AppError(429, 'AI service is busy. Please try again in a moment.')
-    }
-    if (message.includes('timeout') || message.includes('ECONNRESET')) {
-      throw new AppError(504, 'AI service timed out. Please try again.')
-    }
-    throw new AppError(502, 'AI service unavailable. Please try again later.')
+    mapLlmError(err)
   }
 
   if (!fullReply) fullReply = 'Sorry, I could not generate a response. Please try again.'
 
-  await prisma.message.create({
-    data: { conversationId: conversation.id, sender: 'ai', text: fullReply },
-  })
+  await prisma.$transaction([
+    prisma.message.create({
+      data: { conversationId: conversation.id, sender: 'user', text: sanitized },
+    }),
+    prisma.message.create({
+      data: { conversationId: conversation.id, sender: 'ai', text: fullReply },
+    }),
+  ])
 
   return { sessionId: conversation.id }
 }

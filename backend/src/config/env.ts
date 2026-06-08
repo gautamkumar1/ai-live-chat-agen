@@ -10,6 +10,7 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().default(30),
   MAX_MESSAGE_LENGTH: z.coerce.number().default(2000),
   MAX_HISTORY_MESSAGES: z.coerce.number().default(20),
+  RENDER_EXTERNAL_URL: z.string().url().optional(),
 })
 
 const parsed = envSchema.safeParse(process.env)

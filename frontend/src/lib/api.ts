@@ -37,11 +37,13 @@ export async function sendMessageStream(
   message: string,
   sessionId: string | undefined,
   onToken: (token: string) => void,
+  signal?: AbortSignal,
 ): Promise<{ sessionId: string }> {
   const res = await fetch(`${BASE}/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message, sessionId }),
+    signal,
   })
 
   if (!res.ok) {
@@ -49,7 +51,9 @@ export async function sendMessageStream(
     throw new Error((data as { error?: string }).error ?? 'Failed to start stream.')
   }
 
-  const reader = res.body!.getReader()
+  if (!res.body) throw new Error('Streaming not supported by this browser or network.')
+  const reader = res.body.getReader()
+  signal?.addEventListener('abort', () => { reader.cancel().catch(() => {}) })
   const decoder = new TextDecoder()
   let buffer = ''
   let resolvedSessionId = sessionId ?? ''
@@ -64,11 +68,11 @@ export async function sendMessageStream(
 
     for (const line of lines) {
       if (!line.startsWith('data: ')) continue
-      const payload = JSON.parse(line.slice(6)) as {
-        token?: string
-        done?: boolean
-        sessionId?: string
-        error?: string
+      let payload: { token?: string; done?: boolean; sessionId?: string; error?: string }
+      try {
+        payload = JSON.parse(line.slice(6))
+      } catch {
+        continue
       }
       if (payload.error) throw new Error(payload.error)
       if (payload.token) {

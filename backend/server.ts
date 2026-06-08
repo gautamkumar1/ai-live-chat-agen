@@ -5,7 +5,8 @@ import { prisma } from './src/db/client'
 
 function startSelfPing() {
   if (env.NODE_ENV !== 'production') return
-  const url = 'https://backend-support-agent.onrender.com/health'
+  if (!env.RENDER_EXTERNAL_URL) return
+  const url = `${env.RENDER_EXTERNAL_URL}/health`
   setInterval(async () => {
     try {
       await fetch(url)

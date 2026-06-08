@@ -40,6 +40,9 @@ chatRouter.post(
   async (req, res) => {
     const { message, sessionId } = req.body as z.infer<typeof sendMessageSchema>
 
+    const controller = new AbortController()
+    req.on('close', () => controller.abort())
+
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
     res.setHeader('Cache-Control', 'no-cache, no-transform')
     res.setHeader('Connection', 'keep-alive')
@@ -57,10 +60,14 @@ chatRouter.post(
     try {
       const result = await generateReplyStream(sessionId, message, (token) => {
         send({ token })
-      })
+      }, controller.signal)
       send({ done: true, sessionId: result.sessionId })
     } catch (err) {
-      send({ error: err instanceof Error ? err.message : 'Stream failed.' })
+      if (err instanceof Error && err.name === 'AbortError') {
+        // client disconnected — nothing to send
+      } else {
+        send({ error: err instanceof Error ? err.message : 'Stream failed.' })
+      }
     } finally {
       res.end()
     }
